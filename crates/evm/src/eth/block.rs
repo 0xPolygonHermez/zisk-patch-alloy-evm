@@ -218,10 +218,15 @@ where
             *balance_increments.entry(dao_fork::DAO_HARDFORK_BENEFICIARY).or_default() +=
                 drained_balance;
         }
+
+        // Sort balance increments by address to ensure deterministic order required for ZisK hints
+        let mut entries: Vec<_> = balance_increments.clone().into_iter().collect();
+        entries.sort_unstable_by_key(|(addr, _)| **addr); // Address implementa Copy
+
         // increment balances
         self.evm
             .db_mut()
-            .increment_balances(balance_increments.clone())
+            .increment_balances(entries.clone())
             .map_err(|_| BlockValidationError::IncrementBalanceFailed)?;
 
         // call state hook with changes due to balance increments.
